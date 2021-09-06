@@ -1,0 +1,25 @@
+{
+    "name": "@themezernx/yaz0lib",
+    "version": "1.0.1",
+    "description": "A library for compressing and decompressing Yaz0/Yaz1.",
+    "repository": "https://github.com/ThemezerNX/Yaz0Lib.git",
+    "author": "Migush",
+    "license": "GPL-3.0-or-later",
+    "private": false,
+    "module": "./dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "yarn run build",
+        "publish": "yarn publish --access=public",
+        "test": "yarn run build && node ./test/index.js"
+    },
+    "devDependencies": {
+        "typescript": "^4.2.3"
+    },
+    "files": [
+        "dist/"
+    ],
+    "dependencies": {
+        "@themezernx/yaz0lib": "^1.0.1"
+    }
+}
