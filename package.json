@@ -1,8 +1,8 @@
 {
-    "name": "@themezernx/yaz0lib",
-    "version": "1.0.1",
-    "description": "A library for compressing and decompressing Yaz0/Yaz1.",
-    "repository": "https://github.com/ThemezerNX/Yaz0Lib.git",
+    "name": "@themezernx/sarclib",
+    "version": "1.0.0",
+    "description": "A library for packing and unpacking SARC/SZS archives.",
+    "repository": "https://github.com/ThemezerNX/SarcLib.git",
     "author": "Migush",
     "license": "GPL-3.0-or-later",
     "private": false,
