@@ -2,14 +2,17 @@ const path = require("path");
 const {SarcReader, SarcWriter} = require("../dist/Sarc.js");
 const fs = require("fs");
 
-const data = fs.readFileSync(path.resolve(__dirname, "file/file.txt"));
-const sarcLittle = new SarcWriter(true);
 const sarcBig = new SarcWriter(false);
 
-sarcLittle.addFile("file.txt", data);
-sarcBig.addFile("file.txt", data);
+const dirname = "test3"
+const dir = path.resolve(__dirname, "sarctool", dirname);
+const files = fs.readdirSync(dir);
+for (const filename of files) {
+    console.log("Adding:", filename);
+    sarcBig.addFile(filename, fs.readFileSync(path.join(dir, filename)));
+}
 
-fs.writeFileSync(path.resolve(__dirname, "file.little.szs"), sarcLittle.getBuffer());
-fs.writeFileSync(path.resolve(__dirname, "file.big.szs"), sarcBig.getBuffer());
+
+fs.writeFileSync(path.resolve(__dirname, `${dirname}.decompressed.szs`), sarcBig.getBuffer());
 
 console.log("Done!");
