@@ -1,18 +1,14 @@
 const path = require("path");
-const {SarcReader, SarcWriter} = require("../dist/Sarc.js");
-const fs = require("fs");
+const {SarcFile} = require("../dist");
 
-const sarcBig = new SarcWriter(false);
+const sarcBig = new SarcFile(false);
 
-const dirname = "test3"
-const dir = path.resolve(__dirname, "sarctool", dirname);
-const files = fs.readdirSync(dir);
-for (const filename of files) {
-    console.log("Adding:", filename);
-    sarcBig.addFile(filename, fs.readFileSync(path.join(dir, filename)));
-}
+sarcBig.addFolderContentsFromPath(path.resolve("Psl-8.0.0")).then(()=> {
+    sarcBig.saveTo(path.join(__dirname, "Psl-8.0.0.decompressed.szs"));
 
-
-fs.writeFileSync(path.resolve(__dirname, `${dirname}.decompressed.szs`), sarcBig.getBuffer());
+    const readSarc = new SarcFile();
+        readSarc.loadFrom(path.join(__dirname, "Psl-8.0.0.decompressed.szs"))
+        readSarc.extractTo(path.join(__dirname, "Psl-8.0.0.decompressed"))
+})
 
 console.log("Done!");
