@@ -10,8 +10,8 @@ jobs:
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
-#        with:
-#          cache: 'yarn'
+        with:
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn
