@@ -38,7 +38,7 @@ export class SarcFile {
      * - does not support files with duplicate names
      * - does not support files without name
      *
-     * @param isLittleEndian if true, endian is set to little, if false endian is set to big
+     * @param isLittleEndian if `true`, endian is set to little, if `false` endian is set to big
      */
     constructor(isLittleEndian: boolean = false) {
         this.isLittleEndian = isLittleEndian;
@@ -113,9 +113,10 @@ export class SarcFile {
     }
 
     /**
-     * Instead of using the default-default alignment of 0x04, use a different value.
+     * Instead of using the default-default alignment of `0x04`, use a different value.
      *
      * @param value the new default alignment
+     * @throws Error if alignment is not non-zero and a power of 2
      */
     setDefaultAlignment(value: number) {
         if (value === 0 || (value & Number((value - 1) !== 0)) >>> 0) {
@@ -136,7 +137,7 @@ export class SarcFile {
     /**
      * Return whether the SARC archive is little endian.
      *
-     * @returns {boolean} true if little, false if big
+     * @returns {boolean} `true` if little, `false` if big
      */
     getIsLittleEndian(): boolean {
         return this.isLittleEndian;
@@ -145,7 +146,7 @@ export class SarcFile {
     /**
      * Set endian of the SARC archive to little.
      *
-     * @param isLittleEndian if true, endian is set to little, if false endian is set to big
+     * @param isLittleEndian if `true`, endian is set to little, if `false` endian is set to big
      */
     setLittleEndian(isLittleEndian: boolean) {
         this.isLittleEndian = isLittleEndian;
@@ -163,7 +164,7 @@ export class SarcFile {
             buffer.readUInt32BE(offset);
     }
 
-    private readName(data: Buffer, offset: number) {
+    private static readName(data: Buffer, offset: number) {
         const end = data.indexOf(0, offset);
         return data.slice(offset, end).toString();
     }
@@ -188,7 +189,7 @@ export class SarcFile {
                 throw new Error("Invalid name offset for 0x" + nameHash.toString(16));
             }
 
-            const name = this.readName(data, absNameOffset);
+            const name = SarcFile.readName(data, absNameOffset);
             nodes.push(new FileEntry(data.subarray(fileDataBegin, fileDataEnd), name));
             offset += 0x10;
         }
@@ -201,6 +202,7 @@ export class SarcFile {
      * File may be compressed with Yaz0.
      *
      * @param data the raw sarc file data `Buffer`
+     * @throws Error if the SARC archive is invalid or unsupported
      */
     load(data: Buffer) {
         let decompressed = data;
@@ -270,6 +272,7 @@ export class SarcFile {
      * File may be compressed with Yaz0.
      *
      * @param filePath the sarc file path.
+     * @throws Error if the SARC archive is invalid or unsupported
      */
     loadFrom(filePath: string) {
         this.load(fs.readFileSync(filePath));
@@ -278,7 +281,7 @@ export class SarcFile {
     /**
      * Save current SARC archive to file.
      *
-     * @param compression what Yaz0 compression level to use (0 == no compression)
+     * @param compression what Yaz0 compression level to use. `0`: no compression (fastest), `9`: best compression (slowest)
      * @returns {} the output file `Buffer`
      */
     save(compression: number = 0): Buffer {
