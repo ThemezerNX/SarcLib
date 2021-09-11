@@ -1,6 +1,6 @@
 {
     "name": "@themezernx/sarclib",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A library for packing and unpacking SARC/SZS archives.",
     "repository": "https://github.com/ThemezerNX/SarcLib.git",
     "author": "Migush",
@@ -22,6 +22,6 @@
         "dist/"
     ],
     "dependencies": {
-        "@themezernx/yaz0lib": "^1.0.1"
+        "@themezernx/yaz0lib": "^1.0.2"
     }
 }

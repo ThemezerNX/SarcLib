@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@themezernx/yaz0lib@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@themezernx/yaz0lib/-/yaz0lib-1.0.1.tgz#402ba126a1d7c69cbc49a99da840fb6bd679d26c"
-  integrity sha512-cbd/H7QPH4ISyP307nlyK65VTrkdYP0ZSiu1VKVxHjf/e/SojVo+In2PsWuo3nWCvL8pwPpIaEP/6p9jSvnPNA==
+"@themezernx/yaz0lib@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@themezernx/yaz0lib/-/yaz0lib-1.0.2.tgz#c70866998198bf3acf0de9527b1a3bbc2d400ff9"
+  integrity sha512-WyGpIdIucFWgAvJzacoU+6/yoolSc6oIok2lB0ICtkxR+dFI8IMGRZocf+VvT8FfvZt4u4m0RO+9Iid18Kv6IA==
 
 "@types/node@^16.9.1":
   version "16.9.1"
