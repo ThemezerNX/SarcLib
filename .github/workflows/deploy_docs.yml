@@ -2,7 +2,7 @@ name: Deploy Docs
 on: [push, pull_request]
 
 jobs:
-  build_and_lint:
+  build_and_docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
@@ -19,7 +19,7 @@ jobs:
       - name: Test to see if the project compiles
         run: yarn run build
 
-      - name: Create the docs directory locally in CI
+      - name: Build the docs
         run: npx typedoc
 
       - name: Deploy 🚀
