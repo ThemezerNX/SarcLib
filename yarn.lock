@@ -7,6 +7,11 @@
   resolved "https://registry.yarnpkg.com/@themezernx/yaz0lib/-/yaz0lib-1.0.1.tgz#402ba126a1d7c69cbc49a99da840fb6bd679d26c"
   integrity sha512-cbd/H7QPH4ISyP307nlyK65VTrkdYP0ZSiu1VKVxHjf/e/SojVo+In2PsWuo3nWCvL8pwPpIaEP/6p9jSvnPNA==
 
+"@types/node@^16.9.1":
+  version "16.9.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.9.1.tgz#0611b37db4246c937feef529ddcc018cf8e35708"
+  integrity sha512-QpLcX9ZSsq3YYUUnD3nFDY8H7wctAhQj/TFKL8Ya8v5fMm3CFXxo8zStsLAl780ltoYoo1WvKUVGBQK+1ifr7g==
+
 typescript@^4.2.3:
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.4.2.tgz#6d618640d430e3569a1dfb44f7d7e600ced3ee86"
