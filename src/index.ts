@@ -1,13 +1,13 @@
 /*
  https://github.com/kinnay/Nintendo-File-Formats/wiki/SARC-File-Format
- A combination of SarcLib by abood and sarc lib by zeldamods/leoetlino
+ Based off of SarcLib by MasterVermilli0n/AboodXD and sarc lib by zeldamods/leoetlino
  */
 
 import * as fs from "fs";
 import * as path from "path";
 import {FileEntry} from "./FileEntry";
 import {alignUp, FileDataSection, hashFileName, SARCSection, SFATSection, SFNTSection} from "./Sections";
-import {decompressYaz0} from "@themezernx/yaz0lib/dist";
+import {compressYaz0, decompressYaz0} from "@themezernx/yaz0lib/dist";
 
 const {join} = require("path");
 const {readdir} = require("fs").promises;
@@ -24,67 +24,99 @@ async function* getFiles(dir) {
     }
 }
 
-/**
- *
- * - Does not support files with duplicate names
- * - Does not support files without name
- */
 export class SarcFile {
 
-    hashMultiplier: number = 0x65;
-    isLittleEndian: boolean = false;
-    defaultAlignment = 0x04;
+    private hashMultiplier: number = 0x65;
+    private isLittleEndian: boolean = false;
+    private defaultAlignment = 0x04;
 
-    entries: Array<FileEntry> = [];
+    private entries: Array<FileEntry> = [];
 
+    /**
+     * Construct a new SARC archive.
+     * This library
+     * - does not support files with duplicate names
+     * - does not support files without name
+     *
+     * @param isLittleEndian if true, endian is set to little, if false endian is set to big
+     */
     constructor(isLittleEndian?: boolean) {
         this.isLittleEndian = isLittleEndian;
     }
 
+    /**
+     * Add a file to this SARC archive.
+     *
+     * @param file a FileEntry instance
+     */
     addFile(file: FileEntry) {
         this.entries.push(file);
     }
 
     /**
      * Add a file to this SARC archive.
-     * Note that if your fileName includes slashes, it will
+     * In order to 'put' it in a folder, use a custom `destinationFilePath`
      *
-     * @param data
-     * @param filePath
+     * @param data raw file `Buffer`
+     * @param destinationFilePath e.g. `image.jpg`, or `extra/image.jpg`
      */
-    addRawFile(data: Buffer, filePath?: string) {
-        this.entries.push(new FileEntry(data, filePath));
+    addRawFile(data: Buffer, destinationFilePath: string) {
+        this.entries.push(new FileEntry(data, destinationFilePath));
     }
 
-    addFileFromPath(filePath: string, destinationFilePath?: string) {
+    /**
+     * Add a file to the SARC archive.
+     * In order to 'put' it in a folder, use a custom `destinationFilePath`
+     *
+     * @param filePath the path to the file you want to add
+     * @param destinationFilePath e.g. `image.jpg`, or `extra/image.jpg`
+     */
+    addFileFromPath(filePath: string, destinationFilePath: string = "") {
         const data = fs.readFileSync(filePath);
         this.entries.push(new FileEntry(data, destinationFilePath || path.basename(filePath)));
     }
 
+    /**
+     * Add all files inside a folder to the SARC archive (recursively).
+     * Notes:
+     * - the contents of this folder are stored in the root of the SARC: the folder itself is not included.
+     * - empty directories are skipped
+     * In order to 'put' the contents in a folder, use a custom `destinationFolderPath`
+     *
+     * @param folderPath the path to the folder you want to add
+     * @param destinationFolderName e.g. `images`, or `extra/images`
+     */
+    async addFolderContentsFromPath(folderPath: string, destinationFolderName: string = "") {
+        for await (const f of getFiles(folderPath)) {
+            const fileName = f.path
+                .replace(folderPath, "") // remove common base paths
+                .replace(/^[\\\/]+|[\\\/]+$/g, ""); // trim slashes
+            this.entries.push(new FileEntry(f.data, path.join(destinationFolderName, fileName)));
+        }
+    }
+
+    /**
+     * Remove a specific FileEntry from the contents.
+     * Use `getFiles()` to know which objects are available.
+     *
+     * @param file the FileEntry object to remove.
+     */
     removeFile(file: FileEntry) {
         this.entries.splice(this.entries.indexOf(file), 1);
     }
 
     /**
-     * Add all files inside a folder to the SARC archive (recursively).
-     * Note that contents of this folder are stored in the root of the SARC: the folder itself is not included.
-     *
-     * @param folderPath
-     * @param folderName
+     * Get all FileEntries in this SARC archive.
      */
-    async addFolderContentsFromPath(folderPath: string, folderName?: string) {
-        for await (const f of getFiles(folderPath)) {
-            const fileName = f.path
-                .replace(folderPath, "") // remove common base paths
-                .replace(/^[\\\/]+|[\\\/]+$/g, ""); // trim slashes
-            this.entries.push(new FileEntry(f.data, fileName));
-        }
-    }
-
     getFiles() {
         return this.entries;
     }
 
+    /**
+     * Instead of using the default-default alignment of 0x04, use a different value.
+     *
+     * @param value the new default alignment
+     */
     setDefaultAlignment(value: number) {
         if (value === 0 || (value & Number((value - 1) !== 0)) >>> 0) {
             throw new Error("Alignment must be a non-zero power of 2");
@@ -95,40 +127,36 @@ export class SarcFile {
     /**
      * Set the hash multiplier used for filename hashing.
      *
-     * @param value
+     * @param value the new hash multiplier
      */
     setHashMultiplier(value: number) {
         this.hashMultiplier = value;
     }
 
+    /**
+     * Return whether the SARC archive is little endian.
+     *
+     * @returns {boolean} true if little, false if big
+     */
     getIsLittleEndian(): boolean {
         return this.isLittleEndian;
     }
 
+    /**
+     * Set endian of the SARC archive to little.
+     *
+     * @param isLittleEndian if true, endian is set to little, if false endian is set to big
+     */
     setLittleEndian(isLittleEndian: boolean) {
         this.isLittleEndian = isLittleEndian;
     }
 
-    /**
-     * readUInt16.
-     *
-     * @param buffer
-     * @param offset
-     * @return {number}
-     */
     private readUInt16(buffer: Buffer, offset?: number) {
         return this.isLittleEndian ?
             buffer.readUInt16LE(offset) :
             buffer.readUInt16BE(offset);
     }
 
-    /**
-     * readUInt32.
-     *
-     * @param buffer
-     * @param offset
-     * @return {number}
-     */
     private readUInt32(buffer: Buffer, offset?: number) {
         return this.isLittleEndian ?
             buffer.readUInt32LE(offset) :
@@ -168,6 +196,12 @@ export class SarcFile {
         return nodes;
     }
 
+    /**
+     * Load and parse a SARC archive.
+     * File may be compressed with Yaz0.
+     *
+     * @param data the raw sarc file data `Buffer`
+     */
     load(data: Buffer) {
         let decompressed = data;
         try {
@@ -231,11 +265,23 @@ export class SarcFile {
         this.entries = this.parseFileNodes(decompressed, nodeOffset, nodeCount, nameTableOffset, dataOffset);
     }
 
+    /**
+     * Load and parse a SARC archive.
+     * File may be compressed with Yaz0.
+     *
+     * @param filePath the sarc file path.
+     */
     loadFrom(filePath: string) {
         this.load(fs.readFileSync(filePath));
     }
 
-    save(): Buffer {
+    /**
+     * Save current SARC archive to file.
+     *
+     * @param compression what Yaz0 compression level to use (0 == no compression)
+     * @returns {} the output file `Buffer`
+     */
+    save(compression: number = 0): Buffer {
         // File preparations ------------------------------------------
         const hashedList: { [name: number]: FileEntry } = {};
 
@@ -290,21 +336,43 @@ export class SarcFile {
         sarc.setFileSize(totalFileLength);
         sarc.setDataOffset(dataStartOffset);
 
-        return Buffer.concat([
+        let outputBuffer = Buffer.concat([
             sarc.getBuffer(),
             sfatBuffer,
             sfntBuffer,
             fileDataBuffer,
         ]);
+
+        if (compression != 0) {
+            outputBuffer = compressYaz0(outputBuffer, sfat.getDataOffsetAlignment(), compression);
+        }
+
+        return outputBuffer;
     }
 
-    saveTo(filePath: string) {
-        return fs.writeFileSync(filePath, this.save());
+    /**
+     * Save current SARC archive to file.
+     *
+     * @param filePath the save destination. Will use default file extensions: `.szs` (compressed) or `.sarc` (uncompressed)
+     * @param compression what Yaz0 compression level to use. `0`: no compression (fastest), `9`: best compression (slowest)
+     * @returns {string} full output file path
+     */
+    saveTo(filePath: string, compression: number = 0) {
+        const finalPath = path.resolve(filePath + (compression != 0 ? ".szs" : ".sarc"));
+
+        fs.writeFileSync(finalPath, this.save(compression));
+
+        return finalPath;
     }
 
+    /**
+     * Extract all SARC archive contents to a directory.
+     *
+     * @param destDir the destination directory path
+     */
     extractTo(destDir: string) {
         for (const file of this.entries) {
-            const filePath = destDir.replace(/[\\\/]$/, '') + "/" + file.name;
+            const filePath = destDir.replace(/[\\\/]$/, "") + "/" + file.name;
             try {
                 fs.mkdirSync(path.dirname(filePath), {recursive: true});
             } catch (e) {

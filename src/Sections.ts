@@ -15,15 +15,6 @@ abstract class Section {
 
     abstract getBuffer(): Buffer;
 
-    /**
-     * writeUInt16.
-     *
-     * @param buffer
-     * @param value
-     * @param offset
-     * @param isLittleEndian
-     * @return {number}
-     */
     writeUInt16(value: number, offset?: number, buffer?: Buffer, isLittleEndian?: boolean) {
         const little = isLittleEndian != undefined ? isLittleEndian : this.isLittleEndian;
         const dest = buffer ? buffer : this.buffer;
@@ -33,15 +24,6 @@ abstract class Section {
     }
 
 
-    /**
-     * writeUInt32.
-     *
-     * @param buffer
-     * @param value
-     * @param offset
-     * @param isLittleEndian
-     * @return {number}
-     */
     writeUInt32(value: number, offset?: number, buffer?: Buffer, isLittleEndian?: boolean) {
         const little = isLittleEndian != undefined ? isLittleEndian : this.isLittleEndian;
         const dest = buffer ? buffer : this.buffer;
