@@ -1,7 +1,14 @@
 {
-    "include": ["src/**/*"],
+    "include": [
+        "src/**/*"
+    ],
     "compilerOptions": {
-      "declaration": true,
-      "outDir": "dist"
+        "declaration": true,
+        "outDir": "dist"
+    },
+    "typedocOptions": {
+        "entryPoints": ["src/index.ts"],
+        "out": "docs",
+        "excludePrivate": true
     }
-  }
+}

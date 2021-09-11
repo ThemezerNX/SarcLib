@@ -2,10 +2,10 @@ import {FileEntry} from "./FileEntry";
 
 abstract class Section {
 
-    private isLittleEndian = false;
+    private isLittleEndian;
     protected buffer: Buffer;
 
-    constructor(isLittleEndian: boolean) {
+    constructor(isLittleEndian: boolean = false) {
         this.isLittleEndian = isLittleEndian;
     }
 
