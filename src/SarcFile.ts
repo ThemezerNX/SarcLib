@@ -116,7 +116,7 @@ export class SarcFile {
      * Instead of using the default-default alignment of `0x04`, use a different value.
      *
      * @param value the new default alignment
-     * @throws Error if alignment is not non-zero and a power of 2
+     * @throws Error if alignment is not non-zero or not a power of 2
      */
     setDefaultAlignment(value: number) {
         if (value === 0 || (value & Number((value - 1) !== 0)) >>> 0) {
@@ -148,7 +148,7 @@ export class SarcFile {
      *
      * @param isLittleEndian if `true`, endian is set to little, if `false` endian is set to big
      */
-    setLittleEndian(isLittleEndian: boolean) {
+    setLittleEndian(isLittleEndian: true | false) {
         this.isLittleEndian = isLittleEndian;
     }
 
@@ -272,14 +272,14 @@ export class SarcFile {
      * File may be compressed with Yaz0.
      *
      * @param filePath the sarc file path.
-     * @throws Error if the SARC archive is invalid or unsupported
+     * @throws Error if the SARC archive is invalid, unsupported, or not found
      */
     loadFrom(filePath: string) {
         this.load(fs.readFileSync(filePath));
     }
 
     /**
-     * Save current SARC archive to file.
+     * Save current SARC archive to a `Buffer`.
      *
      * @param compression what Yaz0 compression level to use. `0`: no compression (fastest), `9`: best compression (slowest)
      * @returns {} the output file `Buffer`
