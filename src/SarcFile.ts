@@ -356,12 +356,12 @@ export class SarcFile {
     /**
      * Save current SARC archive to file.
      *
-     * @param filePath the save destination. Will use default file extensions: `.szs` (compressed) or `.sarc` (uncompressed)
+     * @param filePath the save destination. Will use `.szs` (compressed) or `.sarc` (uncompressed) if no file extension was provided.
      * @param compression what Yaz0 compression level to use. `0`: no compression (fastest), `9`: best compression (slowest)
      * @returns {string} full output file path
      */
     saveTo(filePath: string, compression: number = 0) {
-        const finalPath = path.resolve(filePath + (compression != 0 ? ".szs" : ".sarc"));
+        const finalPath = path.resolve(filePath + (!/\.[^\/.]+$/.test(filePath) ? (compression != 0 ? ".szs" : ".sarc") : ""));
 
         fs.writeFileSync(finalPath, this.save(compression));
 
