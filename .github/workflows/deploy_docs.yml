@@ -23,7 +23,7 @@ jobs:
         run: npx typedoc
 
       - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.8.0
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: docs
