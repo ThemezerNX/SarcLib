@@ -1,5 +1,6 @@
 # SarcLib
 [![npm version](https://badge.fury.io/js/@themezernx%2Fsarclib.svg)](https://badge.fury.io/js/@themezernx%2Fsarclib)
+v2 is currently in a private repo and will be put here later.
 
 A library for packing and unpacking SARC/SZS archives, with Yaz0 compression support.
 
