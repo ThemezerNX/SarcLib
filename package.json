@@ -43,6 +43,7 @@
     "typedoc": "^0.26.11",
     "typescript": "^5.9.3"
   },
-  "sideEffects": false
+  "sideEffects": falsem=,
+  "packageManager": "pnpm@10.33.4"
 }
 

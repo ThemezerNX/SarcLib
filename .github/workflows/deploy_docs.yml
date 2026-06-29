@@ -8,16 +8,20 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v7
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          cache: 'yarn'
+          node-version: 24
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn
+        run: pnpm install --frozen-lockfile
 
       - name: Test to see if the project compiles
-        run: yarn run build
+        run: pnpm run build
 
       - name: Build the docs
         run: npx typedoc
