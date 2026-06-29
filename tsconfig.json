@@ -1,14 +1,23 @@
 {
-    "include": [
-        "src/**/*"
-    ],
-    "compilerOptions": {
-        "declaration": true,
-        "outDir": "dist"
-    },
-    "typedocOptions": {
-        "entryPoints": ["src/index.ts"],
-        "out": "docs",
-        "excludePrivate": true
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": "."
+  },
+  "files": [],
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
     }
+  ],
+  "typedocOptions": {
+    "entryPoints": ["src/index.ts"],
+    "out": "docs",
+    "excludePrivate": true
+  }
 }

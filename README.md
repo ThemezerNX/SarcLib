@@ -1,43 +1,78 @@
-# SarcLib
-[![npm version](https://badge.fury.io/js/@themezernx%2Fsarclib.svg)](https://badge.fury.io/js/@themezernx%2Fsarclib)
-v2 is currently in a private repo and will be put here later.
+# @themezernx/sarclib
 
-A library for packing and unpacking SARC/SZS archives, with Yaz0 compression support.
+A lightweight, zero-dependency library for parsing, manipulating, and building Nintendo SARC (Simple Archive) files in TypeScript and JavaScript.
 
-Heavily based on
+## Features
+- Fully parse SARC archive headers, file tables, and data blocks.
+- Add, update, and extract files from SARC archives.
+- Support for Yaz0 compression/decompression utilities.
+- Clean ESM, CommonJS, and TypeScript types bundle.
 
-- [SarcLib](https://github.com/aboood40091/SarcLib) by RoadrunnerWMC, MasterVermilli0n/AboodXD
-- [sarc](https://github.com/zeldamods/sarc) by leoetlino
-
-# Installation
-
+## Installation
 ```bash
-yarn add @themezernx/sarclib
-
+pnpm add @themezernx/sarclib
+# or
 npm install @themezernx/sarclib
 ```
 
-```ts
-// ES5/ES6
-import {SarcFile} from "@themezernx/sarclib/dist";
+## Usage
 
-// commonjs
-const {SarcFile} = require("@themezernx/sarclib/dist");
+### Reading a SARC file
+```typescript
+import { SarcFile } from '@themezernx/sarclib';
+import * as fs from 'fs';
+
+const data = fs.readFileSync('archive.sarc');
+const sarc = new SarcFile();
+sarc.load(data);
+
+// List files inside SARC
+for (const entry of sarc.getFiles()) {
+  console.log(entry.name, entry.data.length);
+}
+
+// Extract a specific file
+const filesList = sarc.getFiles();
+const fileEntry = filesList.find(f => f.name === 'test.txt');
+if (fileEntry) {
+  const content = new TextDecoder().decode(fileEntry.data);
+  console.log(content);
+}
 ```
 
-# Docs
+### Creating/Building a SARC file
+```typescript
+import { SarcFile } from '@themezernx/sarclib';
+import * as fs from 'fs';
 
-Read the docs [here](http://themezernx.github.io/SarcLib)
+const sarc = new SarcFile();
+sarc.addRawFile(new TextEncoder().encode('Hello World!'), 'hello.txt');
 
-# Build
-
-```bash
-# install dependencies
-yarn
-
-# compile
-yarn run build
-
-# simple test
-yarn run test
+const buffer = sarc.save(); // returns Uint8Array
+fs.writeFileSync('output.sarc', buffer);
 ```
+
+### Yaz0 Compression & Decompression
+The library exports helper utilities to compress and decompress data using the Yaz0 algorithm.
+
+```typescript
+import { compressYaz0, decompressYaz, isYazCompressed } from '@themezernx/sarclib';
+import * as fs from 'fs';
+
+const rawData = fs.readFileSync('uncompressed.bin');
+
+// Compress data to Yaz0 format
+// Arguments: data, alignment (default 0), level (0 = fast, 9 = maximum)
+const compressedData = compressYaz0(rawData, 0, 9);
+fs.writeFileSync('compressed.yaz0', compressedData);
+
+// Check if data is Yaz compressed (checks magic header 'Yaz0' / 'Yaz1')
+if (isYazCompressed(compressedData)) {
+  // Decompress Yaz0 data
+  const originalData = decompressYaz(compressedData);
+  console.log('Decompressed size:', originalData.length);
+}
+```
+
+## License
+MIT
