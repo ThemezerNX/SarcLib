@@ -24,7 +24,7 @@ jobs:
         run: pnpm run build
 
       - name: Build the docs
-        run: npx typedoc
+        run: pnpm run docs
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
