@@ -10,7 +10,7 @@ A lightweight, zero-dependency library for parsing, manipulating, and building N
 
 ## Installation
 ```bash
-pnpm add @themezernx/sarclib
+bun add @themezernx/sarclib
 # or
 npm install @themezernx/sarclib
 ```
