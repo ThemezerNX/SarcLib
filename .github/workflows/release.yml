@@ -154,9 +154,11 @@ jobs:
           fi
           tarball=$(basename "${tarballs[0]}")
           echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
-          tar -tzf "package/$tarball"
+          # read the listing once: `tar | grep -q` makes tar fail on a closed pipe, and pipefail turns that into a false error
+          listing=$(tar -tzf "package/$tarball")
+          echo "$listing"
           for file in "$(node -p "require('./package.json').main")" "$(node -p "require('./package.json').module")" "$(node -p "require('./package.json').types")"; do
-            if ! tar -tzf "package/$tarball" | grep -qx "package/${file#./}"; then
+            if ! grep -qxF "package/${file#./}" <<< "$listing"; then
               echo "::error::The tarball is missing $file, which package.json points at."
               exit 1
             fi
