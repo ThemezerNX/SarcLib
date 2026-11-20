@@ -1,0 +1,227 @@
+# Publishes @themezernx/sarclib to npm when a version tag (v*) is pushed, then creates the GitHub release.
+#
+# To release: bump "version" in package.json, merge that to main, then
+#   git tag vX.Y.Z && git push origin vX.Y.Z
+# A tag like v2.1.0-beta.1 (anything with a "-") publishes under the "next" dist-tag, so it never becomes "latest",
+# and its GitHub release is marked as a pre-release.
+#
+# No npm token is stored anywhere. npm trusted publishing (OIDC) lets this workflow publish, so the package has to
+# trust it once, on npmjs.com: the package > Settings > Trusted Publisher > GitHub Actions, with
+#   organization ThemezerNX, repository SarcLib, workflow filename release.yml, and no environment.
+# This needs npm >= 11.5.1 and Node >= 22.14; Node 24 satisfies both, and the publish job checks the npm version anyway.
+#
+# Running the workflow by hand (Actions > Release > Run workflow) does everything except publish: it builds, tests,
+# lints, packs the package and runs `npm publish --dry-run`. Only a pushed tag publishes. A manual run skips the
+# two tag checks but still fails when the version in package.json is already on npm, as a real publish would.
+#
+# Three jobs, so that each one only holds the permission it needs:
+#   verify   checks, builds, tests and packs; can only read the repository
+#   publish  publishes the exact tarball that verify built; the only job that can request an OIDC token
+#   release  creates the GitHub release after the publish succeeded; the only job that can write to the repository
+# If the release job fails after the publish succeeded, re-run just that job (re-running the publish would fail,
+# because the version is on npm by then).
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify and pack
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      dist_tag: ${{ steps.meta.outputs.dist_tag }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+      tarball: ${{ steps.pack.outputs.tarball }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the "is it on main" check needs the history
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Read the package name and version
+        id: meta
+        run: |
+          set -euo pipefail
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" == *-* ]]; then
+            dist_tag=next
+            prerelease=true
+          else
+            dist_tag=latest
+            prerelease=false
+          fi
+          {
+            echo "name=$name"
+            echo "version=$version"
+            echo "dist_tag=$dist_tag"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+          echo "Package $name, version $version, dist-tag $dist_tag"
+
+      - name: Check the tag matches the package version
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error title=Tag does not match package.json::The tag is $TAG but package.json says version $VERSION, so the tag must be v$VERSION. Fix the version or the tag and try again. Nothing was published."
+            exit 1
+          fi
+          echo "Tag $TAG matches package.json version $VERSION."
+
+      - name: Check the tagged commit is on main
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! git rev-parse --verify --quiet refs/remotes/origin/main > /dev/null; then
+            echo "::error title=Cannot find main::The main branch was not fetched, so the tag cannot be checked against it. Nothing was published."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor HEAD refs/remotes/origin/main; then
+            echo "::error title=Tag is not on main::The tag $TAG points at $(git rev-parse --short HEAD), which is not in the history of main. Merge the change into main first and tag the commit on main. Nothing was published."
+            exit 1
+          fi
+          echo "Tagged commit $(git rev-parse --short HEAD) is on main."
+
+      - name: Check the version is not on npm yet
+        env:
+          PACKAGE: ${{ steps.meta.outputs.name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set +e
+          output=$(npm view "$PACKAGE@$VERSION" version 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ] && [ -n "$output" ]; then
+            echo "::error title=Version already published::$PACKAGE@$VERSION is already on npm. Bump the version in package.json, merge it to main and tag the new version. Nothing was published."
+            exit 1
+          fi
+          if ! grep -q "E404" <<< "$output"; then
+            echo "::error title=Could not check npm::Looking up $PACKAGE@$VERSION on npm failed for a reason other than 'not found', so the run stops rather than guess. Nothing was published."
+            echo "$output"
+            exit 1
+          fi
+          echo "$PACKAGE@$VERSION is not on npm yet."
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Pack the package
+        id: pack
+        run: |
+          set -euo pipefail
+          mkdir package
+          pnpm pack --pack-destination package
+          tarballs=(package/*.tgz)
+          if [ "${#tarballs[@]}" -ne 1 ]; then
+            echo "::error::Expected one tarball in package/, found ${#tarballs[@]}."
+            exit 1
+          fi
+          tarball=$(basename "${tarballs[0]}")
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+          tar -tzf "package/$tarball"
+          for file in "$(node -p "require('./package.json').main")" "$(node -p "require('./package.json').module")" "$(node -p "require('./package.json').types")"; do
+            if ! tar -tzf "package/$tarball" | grep -qx "package/${file#./}"; then
+              echo "::error::The tarball is missing $file, which package.json points at."
+              exit 1
+            fi
+          done
+
+      - name: Dry run of the publish
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          DIST_TAG: ${{ steps.meta.outputs.dist_tag }}
+        run: npm publish "./package/$TARBALL" --access public --tag "$DIST_TAG" --dry-run
+
+      - name: Keep the tarball for the publish job
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-package
+          path: package/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # lets npm trusted publishing (OIDC) mint its short-lived token; there is no stored npm token
+    steps:
+      - name: Download the tarball
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+          path: package
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Make sure npm supports trusted publishing
+        run: |
+          required=11.5.1
+          current=$(npm --version)
+          echo "node $(node --version), npm $current"
+          if [ "$(printf '%s\n%s\n' "$required" "$current" | sort -V | head -n 1)" != "$required" ]; then
+            echo "npm $current is older than $required, which trusted publishing needs. Updating npm."
+            npm install --global npm@11
+            echo "npm $(npm --version)"
+          fi
+
+      - name: Publish
+        env:
+          TARBALL: ${{ needs.verify.outputs.tarball }}
+          DIST_TAG: ${{ needs.verify.outputs.dist_tag }}
+        run: npm publish "./package/$TARBALL" --access public --tag "$DIST_TAG" --provenance
+
+  release:
+    name: GitHub release
+    needs: [verify, publish]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the release for the tag
+    steps:
+      - name: Create the release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          # v2.1.0-beta.1 and the like
+          prerelease: ${{ needs.verify.outputs.prerelease }}
