@@ -51,8 +51,10 @@ jobs:
           fetch-depth: 0 # the "is it on main" check needs the history
           persist-credentials: false
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -128,23 +130,23 @@ jobs:
           echo "$PACKAGE@$VERSION is not on npm yet."
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build
+        run: bun run build
 
       - name: Test
-        run: pnpm test
+        run: bun test
 
-      - name: Lint
-        run: pnpm run lint
+      - name: Lint (the TypeScript type check)
+        run: bun run lint
 
       - name: Pack the package
         id: pack
         run: |
           set -euo pipefail
           mkdir package
-          pnpm pack --pack-destination package
+          npm pack --ignore-scripts --pack-destination package
           tarballs=(package/*.tgz)
           if [ "${#tarballs[@]}" -ne 1 ]; then
             echo "::error::Expected one tarball in package/, found ${#tarballs[@]}."

@@ -8,23 +8,24 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Test to see if the project compiles
-        run: pnpm run build
+        run: bun run build
 
       - name: Build the docs
-        run: pnpm run docs
+        run: bun run docs
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
